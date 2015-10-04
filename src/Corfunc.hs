@@ -4,7 +4,7 @@ import Data.Complex
 import Numeric.FFT
 
 porod :: Double -> Double -> Double -> Double
-porod k sigma q = (k*q**(-4))*exp (-q**2*sigma**2)
+porod k sigma q = (k*q**(-4))*exp (-q**2*sigma)
 
 guinier :: Double -> Double -> Double -> Double
 guinier a b q = a * exp (b*q**2)
@@ -39,10 +39,15 @@ fitguinier qs is = guinier a b
 fitporod :: [Double] -> [Double] -> Double -> Double
 fitporod qs is = porod k sigma
     where
-      xs = map (**2) qs
-      ys = map log . zipWith (*) is . map (**4) $ qs
+      is' = filter (>0) is
+      qs' = filterKey (>0) is qs
+      xs = map (**2) qs'
+      ys = map log . zipWith (*) is' . map (**4) $ qs'
       k = exp $ alpha xs ys
-      sigma = sqrt . (*(-1)) $ beta xs ys
+      sigma = 0 * beta xs ys
+
+filterKey :: (a->Bool) -> [a] -> [b] -> [b]
+filterKey f ks = map snd . filter (f.fst) . zip ks
 
 takeKey :: (a->Bool) -> [a] -> [b] -> [b]
 takeKey f ks = map snd . takeWhile (f . fst) . zip ks

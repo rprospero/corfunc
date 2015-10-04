@@ -23,17 +23,20 @@ margin = 50 :: Double
 readAsText :: JSString -> ElemID -> IO ()
 readAsText = ffi "function(name,x){var r = new FileReader;r.onload=function(q){Haste[name](q.target.result)};r.readAsText(document.getElementById(x).files[0]);}"
 
+tupToList (a,b) = [a,b]
+
 updatePage pref svgref = do
   ps <- readIORef pref
   (svg,l) <- readIORef svgref
   let xs = map head ps
       ys = map (!! 1) ps
+      fit = map tupToList . zip xs $ map (fitdata xs ys) xs
 
   _ <- append "g" svg
       >>= attr "class" ("lines" :: String)
       >>= attr "clip-path" ("url(#clip)" :: String)
       >>= selectAll "path"
-      >>= d3data [ps]
+      >>= d3data [ps,fit]
       >>= enter
       >>= append "path"
       >>= attr "d" l
