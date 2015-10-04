@@ -1,4 +1,4 @@
-module Corfunc (corfunc) where
+module Corfunc (corfunc,fitdata) where
 
 import Data.Complex
 import Numeric.FFT
