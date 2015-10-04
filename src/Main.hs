@@ -27,12 +27,13 @@ tupToList (a,b) = [a,b]
 
 updatePage pref svgref = do
   ps <- readIORef pref
-  (svg,l) <- readIORef svgref
+  (svgold,l) <- readIORef svgref
   let xs = map head ps
       ys = map (!! 1) ps
       fit = map tupToList . zip xs $ map (fitdata xs ys) xs
+      cs = take 20 $ corfunc xs ys
 
-  _ <- append "g" svg
+  _ <- append "g" svgold
       >>= attr "class" ("lines" :: String)
       >>= attr "clip-path" ("url(#clip)" :: String)
       >>= selectAll "path"
@@ -44,6 +45,52 @@ updatePage pref svgref = do
 
   print xs
   print ys
+
+  x <- linear >>= domain [0, maximum $ map fst cs]
+      >>= range [0,width]
+  y <- linear >>= domain [minimum $ map snd cs, maximum $ map snd cs]
+      >>= range [height,0]
+
+  xAxis <- Ax.axis >>= Ax.scale x
+          >>= Ax.orient Ax.Bottom
+          >>= Ax.ticks 5
+
+  yAxis <- Ax.axis >>= Ax.scale y
+          >>= Ax.orient Ax.Left
+          >>= Ax.ticks 5
+
+  l <- line x y
+
+  svg <- select "body"
+        >>= append "svg"
+        >>= attr "width" (width + margin)
+        >>= attr "height" (height + margin)
+        >>= append "g"
+        >>= attr "transform" (translate (margin/2,margin/2))
+
+
+  _ <- append "g" svg
+      >>= attr "class" ("x axis" :: String)
+      >>= attr "transform" (translate (0,height))
+      >>= call xAxis
+
+
+  _ <- append "g" svg
+      >>= attr "class" ("y axis" :: String)
+      >>= call yAxis
+
+  _ <- append "g" svg
+      >>= attr "class" ("lines" :: String)
+      >>= attr "clip-path" ("url(#clip)" :: String)
+      >>= selectAll "path"
+      >>= d3data [map tupToList cs]
+      >>= enter
+      >>= append "path"
+      >>= attr "d" l
+      >>= attr "style" ("stroke: black; fill: none" :: String)
+
+  return ()
+
 
 
 makeGraph = do
