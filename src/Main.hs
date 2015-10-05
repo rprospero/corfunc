@@ -31,8 +31,11 @@ updatePage pref xref rref = do
 
   real <- readIORef rref
 
+  updateXdomain [minimum $ map fst cs,
+                 maximum $ map fst cs] real
+  updateYdomain [minimum $ map snd cs,
+                 maximum $ map snd cs] real
   _ <- setPoints real [map tupToList cs]
-
 
   return ()
 
@@ -54,7 +57,7 @@ main = do
 
   x <- linear >>= domain [0, 2500]
       >>= range [0,width margins]
-  y <- linear >>= domain [-20, 80]
+  y <- linear >>= domain [0, 10]
       >>= range [height margins,0]
 
   xref <- makeGraph margins "#xray" q iq >>= newIORef

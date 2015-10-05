@@ -1,4 +1,4 @@
-module Graph (makeGraph, setPoints, defaultGraphMargins, GraphMargins(width,height,margin)) where
+module Graph (makeGraph, setPoints, defaultGraphMargins, GraphMargins(width,height,margin), updateXdomain,updateYdomain) where
 
 import Haste.D2.Scale
 import Haste.D2.Select
@@ -6,14 +6,20 @@ import Haste.D2.SVG
 import Haste.D2.SVG.Axis as Ax
 import Prelude hiding (log)
 
-data Graph = Graph Select Line Ax.Axis Ax.Axis
+data Graph = Graph {name :: String,
+                    selection :: Select,
+                    lineMaker :: Line,
+                    xscale :: Scale,
+                    yscale :: Scale,
+                    x:: Ax.Axis,
+                    y :: Ax.Axis}
 data GraphMargins = GraphMargins {width :: Double,
                                   height :: Double,
                                   margin :: Double}
 defaultGraphMargins = GraphMargins 400 400 100
 
 makeGraph :: GraphMargins -> String -> Scale -> Scale -> IO Graph
-makeGraph m canvas x y = do
+makeGraph m name x y = do
 
   xAxis <- Ax.axis >>= Ax.scale x
           >>= Ax.orient Ax.Bottom
@@ -23,7 +29,7 @@ makeGraph m canvas x y = do
           >>= Ax.orient Ax.Left
           >>= Ax.ticks 5
 
-  svg <- select canvas
+  svg <- select name d3
         >>= attr "width" (width m + margin m)
         >>= attr "height" (height m + margin m)
         >>= append "g"
@@ -33,23 +39,38 @@ makeGraph m canvas x y = do
 
 
   _ <- append "g" svg
-      >>= attr "class" ("x axis" :: String)
+      >>= attr "class" (tail name ++ "-x-axis" :: String)
       >>= attr "transform" (translate (0,height m))
       >>= call xAxis
 
 
   _ <- append "g" svg
-      >>= attr "class" ("y axis" :: String)
+      >>= attr "class" (tail name ++ "-y-axis" :: String)
       >>= call yAxis
 
   local <- append "g" svg
       >>= attr "class" ("lines" :: String)
       >>= attr "clip-path" ("url(#clip)" :: String)
 
-  return $ Graph local l x y
+  return $ Graph (tail name) local l x y xAxis yAxis
 
 setPoints :: Graph -> [[[Double]]] -> IO ()
-setPoints (Graph  selection l _ _) ds = do
-  _ <- selectAll "path" selection >>= d3data ds >>= enter >>= append "path" >>= attr "d" l >>= attr "style" ("stroke: black; fill: none" :: String)
-  _ <- selectAll "path" selection >>= transition >>= duration 20000 >>= attr "d" l
+setPoints g ds = do
+  _ <- selectAll "path" (selection g) >>= d3data ds >>= enter >>= append "path" >>= attr "d" (lineMaker g) >>= attr "style" ("stroke: black; fill: none" :: String)
+  _ <- selectAll "path" (selection g) >>= transition >>= duration 2000 >>= attr "d" (lineMaker g)
+  return ()
+
+updateXdomain :: [Double] -> Graph -> IO ()
+updateXdomain d g = do
+  let marker = "."++name g ++"-x-axis"
+  _ <- domain d $ xscale g
+  _ <- select marker d3 >>= transition >>= duration 2000 >>= call (x g)
+  return ()
+
+updateYdomain :: [Double] -> Graph -> IO ()
+updateYdomain d g = do
+  let marker = "."++name g ++"-y-axis"
+  print d
+  _ <- domain d $ yscale g
+  _ <- select marker d3 >>= transition >>= duration 2000 >>= call (y g)
   return ()
