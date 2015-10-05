@@ -17,7 +17,7 @@ import Prelude hiding (log)
 
 width = 400 :: Double
 height = 400 :: Double
-margin = 50 :: Double
+margin = 100 :: Double
 
 
 readAsText :: JSString -> ElemID -> IO ()
