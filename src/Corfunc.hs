@@ -91,7 +91,7 @@ interp xs ys x =
         p:_ -> interpHead p x
 
 dct :: [Double] -> [Double]
-dct = map realPart . dft . map (:+ 0)
+dct = map realPart . fft . map (:+ 0)
 
 corfunc :: [Double] -> [Double] -> [(Double,Double)]
 corfunc qs is = let fullData = fitdata qs is
@@ -100,6 +100,6 @@ corfunc qs is = let fullData = fitdata qs is
                     qgrid = map (*deltaq) [0..factor*2^(floor . log . (/ deltaq) . maximum $ qs)]
                     igrid = zipWith (*) (map (**2) qgrid) $ map fullData qgrid
                     ys = dct igrid
-                    xs = map (\q -> pi * q / deltaq /fromIntegral (length qgrid)) [0..fromIntegral $ length qgrid]
+                    xs = map (\q -> 2 * pi * q / deltaq /fromIntegral (length qgrid)) [0..fromIntegral $ length qgrid]
                 in
                   zip xs ys
