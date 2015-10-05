@@ -6,16 +6,18 @@ import Haste.D2.SVG
 import Haste.D2.SVG.Axis as Ax
 import Prelude hiding (log)
 
-data Graph = Graph {name :: String,
+data Graph = Graph {gname :: String,
                     selection :: Select,
                     lineMaker :: Line,
                     xscale :: Scale,
                     yscale :: Scale,
-                    x:: Ax.Axis,
-                    y :: Ax.Axis}
+                    xax:: Ax.Axis,
+                    yax :: Ax.Axis}
 data GraphMargins = GraphMargins {width :: Double,
                                   height :: Double,
                                   margin :: Double}
+
+defaultGraphMargins :: GraphMargins
 defaultGraphMargins = GraphMargins 400 400 100
 
 makeGraph :: GraphMargins -> String -> Scale -> Scale -> IO Graph
@@ -62,15 +64,15 @@ setPoints g ds = do
 
 updateXdomain :: [Double] -> Graph -> IO ()
 updateXdomain d g = do
-  let marker = "."++name g ++"-x-axis"
+  let marker = "."++gname g ++"-x-axis"
   _ <- domain d $ xscale g
-  _ <- select marker d3 >>= transition >>= duration 2000 >>= call (x g)
+  _ <- select marker d3 >>= transition >>= duration 2000 >>= call (xax g)
   return ()
 
 updateYdomain :: [Double] -> Graph -> IO ()
 updateYdomain d g = do
-  let marker = "."++name g ++"-y-axis"
+  let marker = "."++gname g ++"-y-axis"
   print d
   _ <- domain d $ yscale g
-  _ <- select marker d3 >>= transition >>= duration 2000 >>= call (y g)
+  _ <- select marker d3 >>= transition >>= duration 2000 >>= call (yax g)
   return ()
