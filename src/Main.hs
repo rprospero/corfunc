@@ -51,33 +51,7 @@ updatePage pref svgref = do
   y <- linear >>= domain [minimum $ map snd cs, maximum $ map snd cs]
       >>= range [height,0]
 
-  xAxis <- Ax.axis >>= Ax.scale x
-          >>= Ax.orient Ax.Bottom
-          >>= Ax.ticks 5
-
-  yAxis <- Ax.axis >>= Ax.scale y
-          >>= Ax.orient Ax.Left
-          >>= Ax.ticks 5
-
-  l <- line x y
-
-  svg <- select "body"
-        >>= append "svg"
-        >>= attr "width" (width + margin)
-        >>= attr "height" (height + margin)
-        >>= append "g"
-        >>= attr "transform" (translate (margin/2,margin/2))
-
-
-  _ <- append "g" svg
-      >>= attr "class" ("x axis" :: String)
-      >>= attr "transform" (translate (0,height))
-      >>= call xAxis
-
-
-  _ <- append "g" svg
-      >>= attr "class" ("y axis" :: String)
-      >>= call yAxis
+  (svg,l) <- makeGraph x y
 
   _ <- append "g" svg
       >>= attr "class" ("lines" :: String)
@@ -91,13 +65,7 @@ updatePage pref svgref = do
 
   return ()
 
-
-
-makeGraph = do
-  x <- log >>= domain [1e-3, 1]
-      >>= range [0,width]
-  y <- log >>= domain [1e-2, 1e5]
-      >>= range [height,0]
+makeGraph x y = do
 
   xAxis <- Ax.axis >>= Ax.scale x
           >>= Ax.orient Ax.Bottom
@@ -107,14 +75,14 @@ makeGraph = do
           >>= Ax.orient Ax.Left
           >>= Ax.ticks 5
 
-  l <- line x y
-
   svg <- select "body"
         >>= append "svg"
         >>= attr "width" (width + margin)
         >>= attr "height" (height + margin)
         >>= append "g"
         >>= attr "transform" (translate (margin/2,margin/2))
+
+  l <- line x y
 
 
   _ <- append "g" svg
@@ -136,7 +104,12 @@ main = do
 
   ps <- newIORef []
 
-  (svg,l) <- makeGraph
+  x <- log >>= domain [1e-3, 1]
+      >>= range [0,width]
+  y <- log >>= domain [1e-2, 1e5]
+      >>= range [height,0]
+
+  (svg,l) <- makeGraph x y
   svgref <- newIORef (svg,l)
 
   let action = updatePage ps svgref
