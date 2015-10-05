@@ -15,13 +15,26 @@ build-type:          Simple
 extra-source-files:  ChangeLog.md
 cabal-version:       >=1.10
 
+flag haste-inst
+    Description:  either if it is being compiled with haste-inst or with cabal
+    Default: False
+
+
 executable corfunc
   main-is:             Main.hs
   -- other-modules:       
-  -- other-extensions:    
-  build-depends:       base >=4.8 && <4.9,
-                       pure-fft,
-                       haste-lib,
-                       haste-d2
+  -- other-extensions:
+  if flag(haste-inst)
+    build-depends:       base >=4.8 && <4.9,
+                         pure-fft,
+                         haste-lib,
+                         haste-d2,
+                         vector
+  else
+    build-depends:       base >=4.8 && <4.9,
+                         pure-fft,
+                         haste-compiler,
+                         haste-d2,
+                         vector
   hs-source-dirs:      src
   default-language:    Haskell2010
