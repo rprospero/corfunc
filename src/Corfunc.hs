@@ -95,8 +95,9 @@ dct = map realPart . dft . map (:+ 0)
 
 corfunc :: [Double] -> [Double] -> [(Double,Double)]
 corfunc qs is = let fullData = fitdata qs is
-                    deltaq = (qs!!1-head qs)
-                    qgrid = map (*deltaq) [0..2^(floor . log . (/ deltaq) . maximum $ qs)]
+                    factor = 16
+                    deltaq = (qs!!1-head qs)/factor
+                    qgrid = map (*deltaq) [0..factor*2^(floor . log . (/ deltaq) . maximum $ qs)]
                     igrid = zipWith (*) (map (**2) qgrid) $ map fullData qgrid
                     ys = dct igrid
                     xs = map (\q -> pi * q / deltaq /fromIntegral (length qgrid)) [0..fromIntegral $ length qgrid]
