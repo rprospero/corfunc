@@ -25,47 +25,35 @@ readAsText = ffi "function(name,x){var r = new FileReader;r.onload=function(q){H
 
 tupToList (a,b) = [a,b]
 
-updatePage pref svgref = do
+addPoints selection ds l = selectAll "path" selection >>= d3data ds >>= enter >>= append "path" >>= attr "d" l >>= attr "style" ("stroke: black; fill: none" :: String)
+
+updatePage pref xref rref = do
   ps <- readIORef pref
-  (svgold,l) <- readIORef svgref
+  (xray,lx) <- readIORef xref
   let xs = map head ps
       ys = map (!! 1) ps
-      fit = map tupToList . zip xs $ map (fitdata xs ys) xs
+      fit = zipWith (curry tupToList) xs $ map (fitdata xs ys) xs
       cs = take 20 $ corfunc xs ys
 
-  _ <- append "g" svgold
-      >>= attr "class" ("lines" :: String)
-      >>= attr "clip-path" ("url(#clip)" :: String)
-      >>= selectAll "path"
-      >>= d3data [ps,fit]
-      >>= enter
-      >>= append "path"
-      >>= attr "d" l
-      >>= attr "style" ("stroke: black; fill: none" :: String)
+  _ <- addPoints xray [ps,fit] lx
 
-  print xs
-  print ys
+  _ <- selectAll "path" xray
+      >>= transition
+      >>= duration 10000
+      >>= attr "d" lx
 
-  x <- linear >>= domain [0, maximum $ map fst cs]
-      >>= range [0,width]
-  y <- linear >>= domain [minimum $ map snd cs, maximum $ map snd cs]
-      >>= range [height,0]
+  (real,lr) <- readIORef rref
 
-  (svg,l) <- makeGraph x y
+  _ <- addPoints real [map tupToList cs] lr
 
-  _ <- append "g" svg
-      >>= attr "class" ("lines" :: String)
-      >>= attr "clip-path" ("url(#clip)" :: String)
-      >>= selectAll "path"
-      >>= d3data [map tupToList cs]
-      >>= enter
-      >>= append "path"
-      >>= attr "d" l
-      >>= attr "style" ("stroke: black; fill: none" :: String)
+  _ <- selectAll "path" real
+      >>= transition
+      >>= duration 10000
+      >>= attr "d" lr
 
   return ()
 
-makeGraph x y = do
+makeGraph canvas x y = do
 
   xAxis <- Ax.axis >>= Ax.scale x
           >>= Ax.orient Ax.Bottom
@@ -75,8 +63,7 @@ makeGraph x y = do
           >>= Ax.orient Ax.Left
           >>= Ax.ticks 5
 
-  svg <- select "body"
-        >>= append "svg"
+  svg <- select canvas
         >>= attr "width" (width + margin)
         >>= attr "height" (height + margin)
         >>= append "g"
@@ -95,7 +82,11 @@ makeGraph x y = do
       >>= attr "class" ("y axis" :: String)
       >>= call yAxis
 
-  return (svg,l)
+  local <- append "g" svg
+      >>= attr "class" ("lines" :: String)
+      >>= attr "clip-path" ("url(#clip)" :: String)
+
+  return (local,l)
 
 
 main :: IO ()
@@ -104,15 +95,20 @@ main = do
 
   ps <- newIORef []
 
-  x <- log >>= domain [1e-3, 1]
+  q <- log >>= domain [1e-3, 1]
       >>= range [0,width]
-  y <- log >>= domain [1e-2, 1e5]
+  iq <- log >>= domain [1e-2, 1e5]
       >>= range [height,0]
 
-  (svg,l) <- makeGraph x y
-  svgref <- newIORef (svg,l)
+  x <- linear >>= domain [0, 2500]
+      >>= range [0,width]
+  y <- linear >>= domain [-20, 80]
+      >>= range [height,0]
 
-  let action = updatePage ps svgref
+  xref <- makeGraph "#xray" q iq >>= newIORef
+  rref <- makeGraph "#real" x y >>= newIORef
+
+  let action = updatePage ps xref rref
 
   export "processDump" (processDump action ps)
   _ <- onEvent loadPath Change $ const $ readAsText "processDump" "loadPath"
